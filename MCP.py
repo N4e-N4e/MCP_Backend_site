@@ -32,7 +32,7 @@ def create_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
 
-    service = Service(ChromeDriverManager().install())
+    service = Service("/usr/bin/chromium-driver")
     driver = webdriver.Chrome(service=service, options=options)
 
     return driver
@@ -172,4 +172,5 @@ def OIG_search (item: str) -> list:
 
 #----------------------------------------
 if __name__ == "__main__":
+
     mcp.run()
