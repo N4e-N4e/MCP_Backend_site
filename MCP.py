@@ -39,8 +39,8 @@ def create_driver():
 
     
 
-    # service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(options=options)
+    service = Service(ChromeDriverManager().install())
+    driver = webdriver.Chrome(service=service, options=options)
 
     return driver
 
@@ -181,6 +181,7 @@ def OIG_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
