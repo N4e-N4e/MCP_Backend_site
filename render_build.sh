@@ -4,7 +4,7 @@
 apt-get update
 
 # Install Chromium along with its required dependencies
-sudo apt-get install -y chromium-browser
+apt-get update && apt-get install -y chromium-browser chromium-chromedriver
 
 # Python dependencies for the mcp to run
 pip install -r requirements.txt
