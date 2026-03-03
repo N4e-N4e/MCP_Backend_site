@@ -32,7 +32,8 @@ def create_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
 
-    options.binary_location = "/usr/bin/chromium" # Location to point to for chromium
+    # options.binary_location = "/usr/bin/chromium" 
+    # Location to point to for chromium
 
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
@@ -176,6 +177,7 @@ def OIG_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
