@@ -41,7 +41,7 @@ def create_driver():
         
     options.binary_location = chrome_bin
 
-    service = Service(ChromeDriverManager().install())
+    service = Service(ChromeDriverManager(path=os.path.expanduser("~/.wdm"), chrome_type="chromium", use_local_cache=True).install())
     driver = webdriver.Chrome(service=service, options=options)
 
     return driver
@@ -183,6 +183,7 @@ def OIG_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
