@@ -9,6 +9,8 @@ from selenium.webdriver.common.by import By  #Used to locate elements.
 from selenium.webdriver.support.ui import WebDriverWait #Waits for the page to fully load.
 from selenium.webdriver.support import expected_conditions as EC #Used intandem with WebDriverWit, basically used to set condition . Wait until something happens (condition) on the webpage before continuing.
 from webdriver_manager.chrome import ChromeDriverManager
+import chromedriver_autoinstaller
+
 #Naming the MCP
 mcp = FastMCP("Claims_Reader_DME")
 
@@ -179,6 +181,7 @@ def OIG_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
