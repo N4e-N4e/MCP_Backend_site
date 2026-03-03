@@ -8,7 +8,7 @@ from selenium.webdriver.chrome.service import Service #Acts as a manager. Used t
 from selenium.webdriver.common.by import By  #Used to locate elements.
 from selenium.webdriver.support.ui import WebDriverWait #Waits for the page to fully load.
 from selenium.webdriver.support import expected_conditions as EC #Used intandem with WebDriverWit, basically used to set condition . Wait until something happens (condition) on the webpage before continuing.
-from webdriver_manager.chrome import ChromeDriverManager
+# from webdriver_manager.chrome import ChromeDriverManager # Not needed ?
 import os
 
 #Naming the MCP
@@ -41,8 +41,8 @@ def create_driver():
         
     options.binary_location = chrome_bin
 
-    service = Service(ChromeDriverManager().install())
-    driver = webdriver.Chrome(service=service, options=options)
+    
+    driver = webdriver.Chrome(options=options)
 
     return driver
 
@@ -183,6 +183,7 @@ def OIG_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
