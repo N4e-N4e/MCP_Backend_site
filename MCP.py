@@ -9,7 +9,7 @@ from selenium.webdriver.common.by import By  #Used to locate elements.
 from selenium.webdriver.support.ui import WebDriverWait #Waits for the page to fully load.
 from selenium.webdriver.support import expected_conditions as EC #Used intandem with WebDriverWit, basically used to set condition . Wait until something happens (condition) on the webpage before continuing.
 from webdriver_manager.chrome import ChromeDriverManager
-import chromedriver_autoinstaller
+import os
 
 #Naming the MCP
 mcp = FastMCP("Claims_Reader_DME")
@@ -34,10 +34,12 @@ def create_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
 
-    chromedriver_autoinstaller.install()
-    options.binary_location = chromedriver_autoinstaller.utils.get_chromium_path()
-
-    
+    # Point to the Chrome binary downloaded by render_build.sh
+    chrome_bin = "/opt/render/project/.render/chrome/opt/google/chrome/google-chrome"
+    if not os.path.exists(chrome_bin):
+        raise FileNotFoundError(f"Chrome binary not found at {chrome_bin}")
+        
+    options.binary_location = chrome_bin
 
     service = Service(ChromeDriverManager().install())
     driver = webdriver.Chrome(service=service, options=options)
@@ -181,6 +183,7 @@ def OIG_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
