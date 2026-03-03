@@ -99,7 +99,7 @@ def Link_Fetch_Block(url_result):
     items = driver.find_elements(By.XPATH, "//div[contains(@class,'search-result-item')]//div[@role='link']")
     result = []
 
-    for index in range(min(10, len(items))):
+    for index in range(min(1, len(items))):
         try:
 
 
@@ -183,6 +183,7 @@ def OIG_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
