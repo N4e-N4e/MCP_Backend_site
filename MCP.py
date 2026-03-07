@@ -8,12 +8,13 @@ from selenium.webdriver.chrome.service import Service #Acts as a manager. Used t
 from selenium.webdriver.common.by import By  #Used to locate elements.
 from selenium.webdriver.support.ui import WebDriverWait #Waits for the page to fully load.
 from selenium.webdriver.support import expected_conditions as EC #Used intandem with WebDriverWit, basically used to set condition . Wait until something happens (condition) on the webpage before continuing.
-# from webdriver_manager.chrome import ChromeDriverManager # Not needed ?
+from selenium.common.exceptions import NoSuchElementException #Handle errors in try-except clauses
 import os
 
 #Naming the MCP
 mcp = FastMCP("Claims_Reader_DME")
 
+hm_r = os.getenv("nResult")
 
 #Creating the browser driver
 def create_driver():
@@ -190,7 +191,7 @@ def Link_Fetch_Block(url_result):
     items = driver.find_elements(By.XPATH, "//div[contains(@class,'search-result-item')]//div[@role='link']")
     result = []
 
-    for index in range(min(1, len(items))):
+    for index in range(min(hm_r, len(items))):
         try:
 
 
@@ -367,7 +368,7 @@ def Link_Fetch_Block_SOS(driver, wait, url_search, term):
     driver.quit()
 
     pages = []
-    for index in range(min(2, len(link_con))):
+    for index in range(min(hm_r, len(link_con))):
         href= targets[index]
         driver = create_driver()
         wait = WebDriverWait(driver, 200)
@@ -417,6 +418,7 @@ def SOS_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
