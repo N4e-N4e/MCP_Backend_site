@@ -35,15 +35,28 @@ def create_driver():
     options.add_argument("--disable-gpu")
     options.add_argument("--window-size=1920,1080")
 
-    # Point to the Chrome binary downloaded by render_build.sh
+    # Anti-bot flags
+    options.add_argument("--disable-blink-features=AutomationControlled")
+    options.add_experimental_option("excludeSwitches", ["enable-automation"])
+    options.add_experimental_option("useAutomationExtension", False)
+    options.add_argument(
+        "user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+        "AppleWebKit/537.36 (KHTML, like Gecko) "
+        "Chrome/124.0.0.0 Safari/537.36"
+    )
+
     chrome_bin = "/opt/render/project/.render/chrome/opt/google/chrome/google-chrome"
     if not os.path.exists(chrome_bin):
         raise FileNotFoundError(f"Chrome binary not found at {chrome_bin}")
-        
+
     options.binary_location = chrome_bin
 
-    
     driver = webdriver.Chrome(options=options)
+
+    # Mask webdriver property
+    driver.execute_cdp_cmd("Page.addScriptToEvaluateOnNewDocument", {
+        "source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"
+    })
 
     return driver
 
@@ -418,6 +431,7 @@ def SOS_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
