@@ -14,7 +14,7 @@ import os
 #Naming the MCP
 mcp = FastMCP("Claims_Reader_DME")
 
-hm_r = os.getenv("nResult")
+hm_r = int(os.getenv("nResult", 1))
 
 #Creating the browser driver
 def create_driver():
@@ -418,6 +418,7 @@ def SOS_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
