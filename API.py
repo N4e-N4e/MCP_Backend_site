@@ -14,6 +14,7 @@ class SearchRequest(BaseModel):
 async def oig_search(req: SearchRequest):
     loop = asyncio.get_event_loop()
     result = await loop.run_in_executor(executor, OIG_search, req.query)
+    return {"result": result}
 
 @app.post("/api/sos_search")
 async def sos_search(req: SearchRequest):
@@ -22,4 +23,5 @@ async def sos_search(req: SearchRequest):
     return {"result": result}
 
 
-    return {"result": result}
+    
+
