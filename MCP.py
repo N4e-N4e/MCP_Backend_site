@@ -9,6 +9,7 @@ from selenium.webdriver.common.by import By  #Used to locate elements.
 from selenium.webdriver.support.ui import WebDriverWait #Waits for the page to fully load.
 from selenium.webdriver.support import expected_conditions as EC #Used intandem with WebDriverWit, basically used to set condition . Wait until something happens (condition) on the webpage before continuing.
 from selenium.common.exceptions import NoSuchElementException #Handle errors in try-except clauses
+import re #Expressions which be used to navigate the pages of a table
 import os
 
 #Naming the MCP
@@ -295,33 +296,143 @@ def OIG_search (item: str) -> list:
 #---------------------------------------- SOS Tool Functions ----------------------------------------
 
 
-# SOS MO has 3 tabs and as such there will be three functions to get info from each tab....
+# SOS MO has many tabs and as such there will be quite a few functions to get info from each tab....
+
+# Owners Tab
+def SOS_Owners_Block(driver, wait):
+    cc = []
+
+    wait.until(lambda d: "Just a moment" not in d.title)
+    try:
+        clicktab = driver.find_element(By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_tsBEDetail']//span[@class='rtsTxt' and text()='Owners']")
+        driver.execute_script("arguments[0].click();", clicktab)
+
+        wait.until(EC.presence_of_element_located((By.XPATH,"//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_pvBEOwner']//table[contains(@class,'rgMasterTable')]")))
+
+        rows = driver.find_elements(By.XPATH,"//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_BEOwnerGrid']//tbody/tr")
+
+        for row in rows:
+            cols = row.find_elements(By.XPATH, "./td")
+            if len(cols) < 5:
+                continue
+            cc.append({
+                "Name": cols[1].text.strip(),
+                "Type": cols[2].text.strip(),
+                "Address": cols[3].text.strip().replace("\n", ", ").replace(",,", ","),
+                "Since": cols[4].text.strip(),
+                "To": cols[5].text.strip() if len(cols) > 5 else None
+            })
+
+    except Exception:
+        return None
+    return cc
+
+# Business Address Tab
+def SOS_Business_Block(driver, wait):
+    cc = []
+
+    wait.until(lambda d: "Just a moment" not in d.title)
+    try:
+        clicktab = driver.find_element(By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_tsBEDetail']//span[@class='rtsTxt' and text()='Business Address']")
+        driver.execute_script("arguments[0].click();", clicktab)
+
+        wait.until(EC.presence_of_element_located((By.XPATH,"//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_pvBEAddress']//table[contains(@class,'rgMasterTable')]")))
+
+        rows = driver.find_elements(By.XPATH,"//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_BEAddressGrid']//table[contains(@class,'rgMasterTable')]//tbody/tr")
+
+        for row in rows:
+            cols = row.find_elements(By.XPATH, "./td")
+            if len(cols) < 4:
+                continue
+            cc.append({
+                "Type": cols[1].text.strip(),
+                "Address": cols[2].text.strip().replace("\n", ", ").replace(",,", ","),
+                "Since": cols[3].text.strip(),
+                "To": cols[4].text.strip() if len(cols) > 4 else None
+            })
+
+    except Exception:
+        return None
+
+    return cc
+
+# Filing Tab
+def SOS_Filings_Block(driver, wait):
+    cc = []
+
+    wait.until(lambda d: "Just a moment" not in d.title)
+    try:
+        clicktab = driver.find_element(By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_tsBEDetail']//span[@class='rtsTxt' and text()='Filings']")
+        driver.execute_script("arguments[0].click();", clicktab)
+
+        wait.until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_pgFilings_pnlFilingsGrid']//table[contains(@class,'rgMasterTable')]")))
+
+        while True:
+            rows = driver.find_elements(By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_pgFilings_pnlFilingsGrid']//tbody/tr")
+
+            for row in rows:
+                cols = row.find_elements(By.XPATH, "./td")
+                if len(cols) < 6:
+                    continue
+                cc.append({
+                    "Type": cols[3].text.strip(),
+                    "Create Filing": cols[4].text.strip(),
+                    "Date Filed": cols[5].text.strip(),
+                    "Effective Date": cols[6].text.strip() if len(cols) > 6 else None
+                })
+
+            try:
+                page_info = driver.find_element(By.XPATH,"//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_pgFilings_pnlFilingsGrid']//div[contains(@class,'rgInfoPart')]").text
+
+
+
+                match = re.search(r'Page\s+(\d+)\s+of\s+(\d+)', page_info)
+                if match:
+                    current = int(match.group(1))
+                    total = int(match.group(2))
+                    if current >= total:
+                        break
+
+                next_btn = driver.find_element(By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_pgFilings_pnlFilingsGrid']//input[contains(@class,'rgPageNext')]")
+                driver.execute_script("arguments[0].click();", next_btn)
+
+                wait.until(lambda d: d.find_element(By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_pgFilings_pnlFilingsGrid']//div[contains(@class,'rgInfoPart')]").text != page_info)
+
+            except Exception:
+                break
+
+    except Exception:
+        return None
+
+    return cc
 
 # Principal Office Address Tab
-def SOS_POA_Block(driver,wait):
-    cc =[]
+def SOS_POA_Block(driver, wait):
+    cc = []
 
     wait.until(lambda d: "Just a moment" not in d.title)
 
-    wait.until(EC.presence_of_element_located((By.XPATH,"//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_psBEDetail']//div[@class='container']")))
+    try:
+        clicktab = driver.find_element(By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_tsBEDetail']//span[@class='rtsTxt' and text()='Principal Office Address']")
+        driver.execute_script("arguments[0].click();", clicktab)
 
-    clicktab = driver.find_element(By.XPATH,"//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_tsBEDetail']//span[@class='rtsTxt' and text()='Principal Office Address']")
-    driver.execute_script("arguments[0].click();", clicktab)
+        wait.until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_pvBEAddress']//table[contains(@class,'rgMasterTable')]")))
 
-    wait.until(EC.presence_of_element_located((By.XPATH,"//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_pvBEAddress']//table[contains(@class,'rgMasterTable')]")))
+        rows = driver.find_elements(By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_BEAddressGrid']//tbody/tr")
 
-    rows = driver.find_elements(By.XPATH,"//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_BEAddressGrid']//tbody/tr")
+        for row in rows:
+            cols = row.find_elements(By.XPATH, "./td")
+            if len(cols) < 4:
+                continue
+            cc.append({
+                "Type": cols[1].text.strip(),
+                "Address": cols[2].text.strip().replace("\n", ", ").replace(",,", ","),
+                "Since": cols[3].text.strip(),
+                "To": cols[4].text.strip() if len(cols) > 4 else None
+            })
 
-    for row in rows:
-        cols = row.find_elements(By.XPATH, "./td")
-        if len(cols) < 4:
-            continue
-        cc.append({
-            "Type": cols[1].text.strip(),
-            "Address": cols[2].text.strip().replace("\n", ", ").replace(",,", ","),
-            "Since": cols[3].text.strip(),
-            "To": cols[4].text.strip() if len(cols) > 4 else None
-        })
+    except Exception:
+        return None
 
     return cc
 
@@ -331,22 +442,26 @@ def SOS_General_Info_Block(driver, wait):
 
     wait.until(lambda d: "Just a moment" not in d.title)
 
-    wait.until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_psBEDetail']//div[@class='container']")))
+    try:
+        wait.until(EC.presence_of_element_located((By.XPATH, "//div[@id='ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBEDetail_psBEDetail']//div[@class='container']")))
 
-    rows = driver.find_elements(By.XPATH, "//div[contains(@class,'swOuterPanelWhiteBox')]//div[contains(@class,'row') and not(contains(@class,'my-1')) and not(contains(@class,'no-gutters'))]")
+        rows = driver.find_elements(By.XPATH, "//div[contains(@class,'swOuterPanelWhiteBox')]//div[contains(@class,'row') and not(contains(@class,'my-1')) and not(contains(@class,'no-gutters'))]")
 
-    for row in rows:
-        cols = row.find_elements(By.XPATH, "./div")
-        for i in range(0, len(cols), 2):
-            try:
-                label = cols[i].find_element(By.XPATH, "./span[contains(@class,'swFieldLabel')]").text.strip()
-            except NoSuchElementException:
-                continue
-            try:
-                val = cols[i+1].find_element(By.XPATH, ".//span[@class='swLabelDetailsBlack'] | .//div[@class='swLabelDetailsBlack']").text.strip().replace('\n',', ')
-            except (NoSuchElementException, IndexError):
-                val = None
-            cc[label] = val
+        for row in rows:
+            cols = row.find_elements(By.XPATH, "./div")
+            for i in range(0, len(cols), 2):
+                try:
+                    label = cols[i].find_element(By.XPATH, "./span[contains(@class,'swFieldLabel')]").text.strip()
+                except NoSuchElementException:
+                    continue
+                try:
+                    val = cols[i+1].find_element(By.XPATH, ".//span[@class='swLabelDetailsBlack'] | .//div[@class='swLabelDetailsBlack']").text.strip().replace('\n', ', ')
+                except (NoSuchElementException, IndexError):
+                    val = None
+                cc[label] = val
+
+    except Exception:
+        return None
 
     return cc
 
@@ -357,7 +472,12 @@ def Read_Block_SOS(driver, wait):
     time.sleep(0.5)
     poa_info = SOS_POA_Block(driver, wait)
     time.sleep(0.5)
-    content.append({"General Information": general_info, "Principal Office Address": poa_info})
+    fil_info = SOS_Filings_Block(driver, wait)
+    time.sleep(0.5)
+    bus_info = SOS_Business_Block(driver, wait)
+    time.sleep(0.5)
+    own_info = SOS_Owners_Block(driver, wait)
+    content.append({"General Information": general_info, "Filings": fil_info, "Principal Office Address": poa_info,"Business Address": bus_info, "Owners": own_info})
 
     return content
 
@@ -380,46 +500,51 @@ def Link_Fetch_Block_SOS(driver, wait, url_search, term):
     targets = [link.get_attribute("href") for link in link_con]
     driver.quit()
 
-    pages = []
-    for index in range(min(hm_r, len(link_con))):
-        href= targets[index]
-        driver = create_driver()
-        wait = WebDriverWait(driver, 200)
-        driver.get(url_search)
-        wait.until(EC.presence_of_element_located((By.XPATH, ".//div[@id = 'main-content']/div[@id = 'page-content']//div[@class = 'container']//div[@class = 'row']")))
-        container = driver.find_element(By.XPATH, ".//div[@id = 'main-content']/div[@id = 'page-content']//div[@class = 'container']//div[@class = 'row']")
+    try:
+        pages = []
+        for index in range(min(hm_r, len(link_con))):
+            href= targets[index]
 
-        terminput = container.find_element(By.XPATH, ".//div[@class = 'row']//input[@type = 'text' and @id = 'ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBESearch_bsPanel_tbBusinessName']")
-        terminput.clear()
-        terminput.send_keys(term)
+            driver = create_driver()
+            wait = WebDriverWait(driver, 3)
 
-        search = container.find_element(By.XPATH, ".//div/a[@id = 'ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBESearch_bsPanel_stdbtnSearch_LinkStandardButton' and @title = 'Search']")
-        driver.execute_script("arguments[0].click();", search)
+            driver.get(url_search)
+            wait.until(EC.presence_of_element_located((By.XPATH, ".//div[@id = 'main-content']/div[@id = 'page-content']//div[@class = 'container']//div[@class = 'row']")))
+            container = driver.find_element(By.XPATH, ".//div[@id = 'main-content']/div[@id = 'page-content']//div[@class = 'container']//div[@class = 'row']")
 
-        wait.until(EC.presence_of_element_located((By.XPATH, ".//div//table[contains(@class,'table')]/tbody/tr/td/a[@style = 'font-weight:bold;']")))
-        point = driver.find_elements(By.XPATH, ".//div//table[contains(@class,'table')]/tbody/tr/td/a[@style = 'font-weight:bold;']")
+            terminput = container.find_element(By.XPATH, ".//div[@class = 'row']//input[@type = 'text' and @id = 'ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBESearch_bsPanel_tbBusinessName']")
+            terminput.clear()
+            terminput.send_keys(term)
 
-        link = point[index]
-        driver.execute_script("arguments[0].scrollIntoView(true);", link)
-        time.sleep(0.5)
-        driver.execute_script("arguments[0].click();", link)
-        wait.until(lambda d: d.current_url == href)
+            search = container.find_element(By.XPATH, ".//div/a[@id = 'ctl00_ctl00_ContentPlaceHolderMain_ContentPlaceHolderMainSingle_ppBESearch_bsPanel_stdbtnSearch_LinkStandardButton' and @title = 'Search']")
+            driver.execute_script("arguments[0].click();", search)
 
-        page = Read_Block_SOS(driver, wait)
-        pages.append({"Link": href, "Page": page})
+            wait.until(EC.presence_of_element_located((By.XPATH, ".//div//table[contains(@class,'table')]/tbody/tr/td/a[@style = 'font-weight:bold;']")))
+            point = driver.find_elements(By.XPATH, ".//div//table[contains(@class,'table')]/tbody/tr/td/a[@style = 'font-weight:bold;']")
 
-        driver.quit()
-        time.sleep(2)
+            link = point[index]
+            driver.execute_script("arguments[0].scrollIntoView(true);", link)
+            time.sleep(0.5)
+            driver.execute_script("arguments[0].click();", link)
+            wait.until(lambda d: d.current_url == href)
 
-    return pages
+            page = Read_Block_SOS(driver, wait)
+            pages.append({"Link": href, "Page": page})
 
+            driver.quit()
+            time.sleep(2)
+
+        return pages
+
+    except Exception:
+        return None
 #---------------------------------------- SOS MCP TooL ----------------------------------------
 
 @mcp.tool()
 def SOS_search (item: str) -> list:
     url_search = "https://bsd.sos.mo.gov/BusinessEntity/BESearch.aspx?SearchType=0"
     driver = create_driver()
-    wait = WebDriverWait(driver, 200)
+    wait = WebDriverWait(driver, 3)
     term = term_cleanup(item)
 
     output = Link_Fetch_Block_SOS(driver, wait, url_search, term)
@@ -431,6 +556,7 @@ def SOS_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
