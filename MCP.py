@@ -104,9 +104,10 @@ def Read_Block(driver, wait, link):
 
     # 4) Article (main content) if any....
     try:
-        paragraphs = container.find_elements(By.XPATH, ".//div[contains(@class, 'usa-prose')]//*[self::h2 | self::h3 | self::p | self::li[parent::ol] | self::li[parent::ul]][not(ancestor::div[contains(@class,'usa-accordion')]) & not(preceding-sibling::h3[@id='related-reports']) & not(ancestor::*[preceding-sibling::h3[@id='related-reports']])] | .//article/p")
+        paragraphs = container.find_elements(By.XPATH,
+                                             ".//div[contains(@class, 'usa-prose')]//*[self::p or self::li[parent::ol]][not(ancestor::div[contains(@class,'usa-accordion')]) and not(preceding-sibling::h3[@id='related-reports'])] | .//article/p")
         if paragraphs:
-            content = " ".join([p.text.strip() for p in paragraphs if p.text.strip()])
+            content = " ".join([p.text.strip() for p in paragraphs])
             page["Article Body"] = content
         else:
             raise NoSuchElementException
@@ -581,6 +582,7 @@ def SOS_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
