@@ -83,7 +83,7 @@ def Read_Block(driver, wait, link):
 
     # 1) Heading
     try:
-        heading = container.find_element(By.XPATH, ".//article//h1").text.strip()
+        heading = container.find_element(By.XPATH, ".//article//h1 | .//h1").text.strip()
         page["Heading"] = heading
     except NoSuchElementException:
         print("Heading Not Found")
@@ -97,14 +97,15 @@ def Read_Block(driver, wait, link):
 
     # 3) Time/Published Date if any....
     try:
-        time = container.find_element(By.XPATH, ".//article//time").text.strip()
-        page["Published"] = time
+        time = container.find_element(By.XPATH, ".//article//time | .//time").text.strip()
+        page["Published/Posted Dates"] = time
     except NoSuchElementException:
-        print("Published Not Found")
+        print("Published/Posted Dates Not Found")
 
     # 4) Article (main content) if any....
     try:
-        paragraphs = container.find_elements(By.XPATH, ".//article/p")
+        paragraphs = container.find_elements(By.XPATH,
+                                             ".//div[contains(@class, 'usa-prose')]//*[self::p or self::li[parent::ol]][not(ancestor::div[contains(@class,'usa-accordion')]) and not(preceding-sibling::h3[@id='related-reports'])] | .//article/p")
         if paragraphs:
             content = " ".join([p.text.strip() for p in paragraphs])
             page["Article Body"] = content
@@ -148,7 +149,19 @@ def Read_Block(driver, wait, link):
     except NoSuchElementException:
         print("Link to Full Report Not Found")
 
-    # 8) Additional Details if any......
+    # 8) Sub Articles if any .......
+    try:
+        sub_articles = container.find_elements(By.XPATH,
+                                               ".//h2[text()='AGREEMENT PRESS RELEASE' or text()='ENFORCEMENT ACTIONS'] | .//h2[text()='AGREEMENT PRESS RELEASE' or text()='ENFORCEMENT ACTIONS']/following-sibling::h3[not(preceding-sibling::div[contains(@class,'margin-top-4')])] | .//h2[text()='AGREEMENT PRESS RELEASE' or text()='ENFORCEMENT ACTIONS']/following-sibling::time[not(preceding-sibling::div[contains(@class,'margin-top-4')])] | .//h2[text()='AGREEMENT PRESS RELEASE' or text()='ENFORCEMENT ACTIONS']/following-sibling::p[not(preceding-sibling::div[contains(@class,'margin-top-4')])]")
+        if sub_articles:
+            content = " ".join([el.text.strip() for el in sub_articles if el.text.strip()])
+            page["Sub Articles"] = content
+        else:
+            raise NoSuchElementException
+    except NoSuchElementException:
+        print("Sub Articles Not Found")
+
+    # 9) Action Details if any......
     try:
         add_details = container.find_elements(By.XPATH, ".//h2[text()='Action Details']/following-sibling::ul[1]/li")
 
@@ -162,13 +175,26 @@ def Read_Block(driver, wait, link):
             if nested:
                 val = nested[0].text.strip()
             else:
-                val = driver.execute_script("return arguments[0].nextSibling.nodeValue;",
-                                            a.find_element(By.XPATH, ".//span")).strip()
+                val = driver.execute_script("return arguments[0].nextSibling.nodeValue;", a.find_element(By.XPATH, ".//span")).strip()
             page[label] = val
     except NoSuchElementException:
-        print("Additional Details Not Found")
+        print("Action Details Not Found")
 
-    # 9) Investigation_Table if any ......
+        # 9b) Tags if any....
+        try:
+            tag_groups = container.find_elements(By.XPATH, ".//dt[contains(@class, 'pep-metadata__term')]")
+            if not tag_groups:
+                raise NoSuchElementException
+
+            for dt in tag_groups:
+                label = dt.text.strip()
+                tags = dt.find_elements(By.XPATH, "./following-sibling::div[1]//span[contains(@class, 'usa-tag')]")
+                if tags:
+                    page[label] = ", ".join([t.text.strip() for t in tags])
+        except NoSuchElementException:
+            print("Tags Not Found")
+
+    # 10) Investigation_Table if any ......
     try:
         table = container.find_elements(By.XPATH, ".//article/div/div/table/tbody/tr")
         if not table:
@@ -181,7 +207,7 @@ def Read_Block(driver, wait, link):
     except NoSuchElementException:
         print("Table Not Found")
 
-    # 10) Investigation specific content
+    # 11) Investigation specific content
     try:
         paragraphs = container.find_elements(By.XPATH, ".//article/div/div/div/p")
         if paragraphs:
@@ -556,6 +582,7 @@ def SOS_search (item: str) -> list:
 if __name__ == "__main__":
 
     mcp.run()
+
 
 
 
